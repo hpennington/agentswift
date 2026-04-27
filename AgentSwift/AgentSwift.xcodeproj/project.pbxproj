@@ -24,15 +24,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		F87AA49C2F9EEE6D00FDAFCB /* DevClaw.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DevClaw.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		F87AA4AB2F9EEE6F00FDAFCB /* DevClawTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DevClawTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		F87AA4B52F9EEE6F00FDAFCB /* DevClawUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DevClawUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F87AA49C2F9EEE6D00FDAFCB /* AgentSwift.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgentSwift.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F87AA4AB2F9EEE6F00FDAFCB /* AgentSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgentSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F87AA4B52F9EEE6F00FDAFCB /* AgentSwiftUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgentSwiftUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		F87AA49E2F9EEE6D00FDAFCB /* DevClaw */ = {
+		F87AA49E2F9EEE6D00FDAFCB /* AgentSwift */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = DevClaw;
+			path = AgentSwift;
 			sourceTree = "<group>";
 		};
 		F87AA4AE2F9EEE6F00FDAFCB /* DevClawTests */ = {
@@ -75,7 +75,7 @@
 		F87AA4932F9EEE6D00FDAFCB = {
 			isa = PBXGroup;
 			children = (
-				F87AA49E2F9EEE6D00FDAFCB /* DevClaw */,
+				F87AA49E2F9EEE6D00FDAFCB /* AgentSwift */,
 				F87AA4AE2F9EEE6F00FDAFCB /* DevClawTests */,
 				F87AA4B82F9EEE6F00FDAFCB /* DevClawUITests */,
 				F87AA49D2F9EEE6D00FDAFCB /* Products */,
@@ -85,9 +85,9 @@
 		F87AA49D2F9EEE6D00FDAFCB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				F87AA49C2F9EEE6D00FDAFCB /* DevClaw.app */,
-				F87AA4AB2F9EEE6F00FDAFCB /* DevClawTests.xctest */,
-				F87AA4B52F9EEE6F00FDAFCB /* DevClawUITests.xctest */,
+				F87AA49C2F9EEE6D00FDAFCB /* AgentSwift.app */,
+				F87AA4AB2F9EEE6F00FDAFCB /* AgentSwiftTests.xctest */,
+				F87AA4B52F9EEE6F00FDAFCB /* AgentSwiftUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		F87AA49B2F9EEE6D00FDAFCB /* DevClaw */ = {
+		F87AA49B2F9EEE6D00FDAFCB /* AgentSwift */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F87AA4BF2F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "DevClaw" */;
+			buildConfigurationList = F87AA4BF2F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "AgentSwift" */;
 			buildPhases = (
 				F87AA4982F9EEE6D00FDAFCB /* Sources */,
 				F87AA4992F9EEE6D00FDAFCB /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				F87AA49E2F9EEE6D00FDAFCB /* DevClaw */,
+				F87AA49E2F9EEE6D00FDAFCB /* AgentSwift */,
 			);
-			name = DevClaw;
+			name = AgentSwift;
 			packageProductDependencies = (
 			);
 			productName = DevClaw;
-			productReference = F87AA49C2F9EEE6D00FDAFCB /* DevClaw.app */;
+			productReference = F87AA49C2F9EEE6D00FDAFCB /* AgentSwift.app */;
 			productType = "com.apple.product-type.application";
 		};
-		F87AA4AA2F9EEE6F00FDAFCB /* DevClawTests */ = {
+		F87AA4AA2F9EEE6F00FDAFCB /* AgentSwiftTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F87AA4C22F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "DevClawTests" */;
+			buildConfigurationList = F87AA4C22F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "AgentSwiftTests" */;
 			buildPhases = (
 				F87AA4A72F9EEE6F00FDAFCB /* Sources */,
 				F87AA4A82F9EEE6F00FDAFCB /* Frameworks */,
@@ -133,16 +133,16 @@
 			fileSystemSynchronizedGroups = (
 				F87AA4AE2F9EEE6F00FDAFCB /* DevClawTests */,
 			);
-			name = DevClawTests;
+			name = AgentSwiftTests;
 			packageProductDependencies = (
 			);
 			productName = DevClawTests;
-			productReference = F87AA4AB2F9EEE6F00FDAFCB /* DevClawTests.xctest */;
+			productReference = F87AA4AB2F9EEE6F00FDAFCB /* AgentSwiftTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		F87AA4B42F9EEE6F00FDAFCB /* DevClawUITests */ = {
+		F87AA4B42F9EEE6F00FDAFCB /* AgentSwiftUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F87AA4C52F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "DevClawUITests" */;
+			buildConfigurationList = F87AA4C52F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "AgentSwiftUITests" */;
 			buildPhases = (
 				F87AA4B12F9EEE6F00FDAFCB /* Sources */,
 				F87AA4B22F9EEE6F00FDAFCB /* Frameworks */,
@@ -156,11 +156,11 @@
 			fileSystemSynchronizedGroups = (
 				F87AA4B82F9EEE6F00FDAFCB /* DevClawUITests */,
 			);
-			name = DevClawUITests;
+			name = AgentSwiftUITests;
 			packageProductDependencies = (
 			);
 			productName = DevClawUITests;
-			productReference = F87AA4B52F9EEE6F00FDAFCB /* DevClawUITests.xctest */;
+			productReference = F87AA4B52F9EEE6F00FDAFCB /* AgentSwiftUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = F87AA4972F9EEE6D00FDAFCB /* Build configuration list for PBXProject "DevClaw" */;
+			buildConfigurationList = F87AA4972F9EEE6D00FDAFCB /* Build configuration list for PBXProject "AgentSwift" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				F87AA49B2F9EEE6D00FDAFCB /* DevClaw */,
-				F87AA4AA2F9EEE6F00FDAFCB /* DevClawTests */,
-				F87AA4B42F9EEE6F00FDAFCB /* DevClawUITests */,
+				F87AA49B2F9EEE6D00FDAFCB /* AgentSwift */,
+				F87AA4AA2F9EEE6F00FDAFCB /* AgentSwiftTests */,
+				F87AA4B42F9EEE6F00FDAFCB /* AgentSwiftUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		F87AA4AD2F9EEE6F00FDAFCB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = F87AA49B2F9EEE6D00FDAFCB /* DevClaw */;
+			target = F87AA49B2F9EEE6D00FDAFCB /* AgentSwift */;
 			targetProxy = F87AA4AC2F9EEE6F00FDAFCB /* PBXContainerItemProxy */;
 		};
 		F87AA4B72F9EEE6F00FDAFCB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = F87AA49B2F9EEE6D00FDAFCB /* DevClaw */;
+			target = F87AA49B2F9EEE6D00FDAFCB /* AgentSwift */;
 			targetProxy = F87AA4B62F9EEE6F00FDAFCB /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -468,7 +468,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DevClaw.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DevClaw";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AgentSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AgentSwift";
 			};
 			name = Debug;
 		};
@@ -489,7 +489,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DevClaw.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DevClaw";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AgentSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AgentSwift";
 			};
 			name = Release;
 		};
@@ -534,7 +534,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		F87AA4972F9EEE6D00FDAFCB /* Build configuration list for PBXProject "DevClaw" */ = {
+		F87AA4972F9EEE6D00FDAFCB /* Build configuration list for PBXProject "AgentSwift" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F87AA4BD2F9EEE6F00FDAFCB /* Debug */,
@@ -543,7 +543,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F87AA4BF2F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "DevClaw" */ = {
+		F87AA4BF2F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "AgentSwift" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F87AA4C02F9EEE6F00FDAFCB /* Debug */,
@@ -552,7 +552,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F87AA4C22F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "DevClawTests" */ = {
+		F87AA4C22F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "AgentSwiftTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F87AA4C32F9EEE6F00FDAFCB /* Debug */,
@@ -561,7 +561,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F87AA4C52F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "DevClawUITests" */ = {
+		F87AA4C52F9EEE6F00FDAFCB /* Build configuration list for PBXNativeTarget "AgentSwiftUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F87AA4C62F9EEE6F00FDAFCB /* Debug */,

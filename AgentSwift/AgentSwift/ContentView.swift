@@ -14,10 +14,26 @@ struct SimulatorOption: Identifiable, Hashable {
     }
 }
 
+struct BuildInfo {
+    var schemeName: String
+    var projectPath: String
+    var simulatorID: String?
+}
+
 struct ChatContext: Equatable {
     let simulator: String?
     let projectPath: String?
     let model: String
+    let buildInfo: BuildInfo?
+
+    static func == (lhs: ChatContext, rhs: ChatContext) -> Bool {
+        lhs.simulator == rhs.simulator &&
+        lhs.projectPath == rhs.projectPath &&
+        lhs.model == rhs.model &&
+        lhs.buildInfo?.schemeName == rhs.buildInfo?.schemeName &&
+        lhs.buildInfo?.projectPath == rhs.buildInfo?.projectPath &&
+        lhs.buildInfo?.simulatorID == rhs.buildInfo?.simulatorID
+    }
 
     var messagePrefix: String? {
         var sections: [String] = []
@@ -34,6 +50,19 @@ struct ChatContext: Equatable {
             [Selected Project Path]
             \(projectPath)
             """)
+        }
+
+        if let info = buildInfo {
+            var buildSection = """
+            [Known Build Configuration — SKIP PHASE 0 AND PHASE 1]
+            The project has already been discovered. Use these exact values and go directly to PHASE 4:
+            - Project path: \(info.projectPath)
+            - Scheme: \(info.schemeName)
+            """
+            if let simID = info.simulatorID {
+                buildSection += "\n- Simulator ID: \(simID)"
+            }
+            sections.append(buildSection)
         }
 
         guard !sections.isEmpty else { return nil }
@@ -402,6 +431,9 @@ struct ContentView: View {
     @AppStorage("selectedModel") private var selectedModel = "claude-sonnet-4-6"
     @State private var input = ""
     @State private var showSettingsPanel = false
+    @State private var buildInfo: BuildInfo?
+    @State private var isBuildRun = false
+    @State private var buildRunStartIndex = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -448,6 +480,15 @@ struct ContentView: View {
         }
         .task {
             simulatorStore.refresh()
+        }
+        .onChange(of: viewModel.isRunning) { _, isRunning in
+            if !isRunning && isBuildRun {
+                isBuildRun = false
+                Task { await extractBuildInfo() }
+            }
+        }
+        .onChange(of: selectedProjectPath) { _, _ in
+            buildInfo = nil
         }
     }
 
@@ -525,12 +566,84 @@ struct ContentView: View {
     }
 
     private func buildAndRun() {
-        let prompt = """
-        Build and run the project located at \(selectedProjectPath).
-        Discover the project and scheme, then build and launch it. \
-        Use xcodebuildmcp for all build and launch operations.
+        buildRunStartIndex = viewModel.items.count
+        isBuildRun = true
+
+        let prompt: String
+        if buildInfo != nil {
+            prompt = "Build and run the app using the known build configuration in context."
+        } else {
+            prompt = """
+            Build and run the project located at \(selectedProjectPath).
+            Discover the project and scheme, then build and launch it.
+            Use xcodebuildmcp for all build and launch operations.
+            """
+        }
+        viewModel.send(prompt, apiKey: apiKey, context: buildRunContext, showUserBubble: false)
+    }
+
+    private func extractBuildInfo() async {
+        let runItems = Array(viewModel.items.dropFirst(buildRunStartIndex))
+
+        // Prioritise tool inputs — that's where scheme/path appear in CLI flags.
+        // Include outputs too but keep them short so the prompt stays focused.
+        let lines: [String] = runItems.compactMap { item -> String? in
+            switch item.kind {
+            case .assistant(let text, _):
+                return text.isEmpty ? nil : text
+            case .tool(let name, let input, let out, _, _):
+                var parts = ["[\(name)] \(input)"]
+                if let out, !out.isEmpty {
+                    // Truncate verbose build output
+                    let trimmed = out.count > 500 ? String(out.prefix(500)) + "…" : out
+                    parts.append(trimmed)
+                }
+                return parts.joined(separator: "\n")
+            default:
+                return nil
+            }
+        }
+
+        guard !lines.isEmpty else { return }
+        let sessionText = lines.joined(separator: "\n\n")
+
+        let extractionPrompt = """
+        Look at the xcodebuildmcp commands run in this agent session and extract the build \
+        configuration. The scheme and project path will be visible as CLI flags like \
+        --scheme <name> and --project-path <path>.
+
+        Return ONLY a raw JSON object — no markdown fences, no explanation:
+        {"schemeName":"<scheme>","projectPath":"<path>","simulatorID":"<udid or null>"}
+
+        Session:
+        \(sessionText)
         """
-        viewModel.send(prompt, apiKey: apiKey, context: chatContext, showUserBubble: false)
+
+        do {
+            var json = try await AnthropicService().complete(
+                prompt: extractionPrompt, apiKey: apiKey, model: selectedModel
+            )
+            // Strip markdown code fences if the model added them
+            json = json.trimmingCharacters(in: .whitespacesAndNewlines)
+            if json.hasPrefix("```") {
+                json = json.components(separatedBy: "\n").dropFirst().dropLast().joined(separator: "\n")
+            }
+
+            guard let data = json.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let scheme = obj["schemeName"] as? String, !scheme.isEmpty,
+                  let path = obj["projectPath"] as? String, !path.isEmpty
+            else { return }
+
+            let simID = obj["simulatorID"] as? String
+            buildInfo = BuildInfo(
+                schemeName: scheme,
+                projectPath: path,
+                simulatorID: (simID == nil || simID == "null") ? nil : simID
+            )
+        } catch {
+            // Extraction failed silently; next build run will retry discovery
+        }
     }
 
     private var selectedSimulatorContext: String? {
@@ -544,7 +657,17 @@ struct ContentView: View {
         ChatContext(
             simulator: selectedSimulatorContext,
             projectPath: selectedProjectPath.isEmpty ? nil : selectedProjectPath,
-            model: selectedModel
+            model: selectedModel,
+            buildInfo: nil
+        )
+    }
+
+    private var buildRunContext: ChatContext {
+        ChatContext(
+            simulator: selectedSimulatorContext,
+            projectPath: selectedProjectPath.isEmpty ? nil : selectedProjectPath,
+            model: selectedModel,
+            buildInfo: buildInfo
         )
     }
 }

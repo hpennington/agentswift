@@ -129,6 +129,30 @@ struct AnthropicService {
                         contextInstruction = ""
                     }
 
+                    let buildOverride: String
+                    if let info = context.buildInfo {
+                        buildOverride = """
+                        ╔══════════════════════════════════════════════════════╗
+                        ║  MANDATORY OVERRIDE — READ THIS BEFORE ANYTHING ELSE ║
+                        ╚══════════════════════════════════════════════════════╝
+                        The project has already been fully discovered. \
+                        You MUST skip PHASE 0 and PHASE 1 entirely.
+                        Do NOT run discover-projects, list-schemes, xcodebuildmcp --version, \
+                        or any other tooling or discovery commands.
+
+                        Go directly to PHASE 4 — BUILD using these exact values:
+                          Project path : \(info.projectPath)
+                          Scheme       : \(info.schemeName)
+                        \(info.simulatorID.map { "  Simulator ID : \($0)" } ?? "")
+
+                        Any discovery or setup step is a mistake. Start building immediately.
+                        ════════════════════════════════════════════════════════
+
+                        """
+                    } else {
+                        buildOverride = ""
+                    }
+
                     let body: [String: Any] = [
                         "model": context.model,
                         "max_tokens": 10000,
@@ -136,7 +160,7 @@ struct AnthropicService {
                         "system": [[
                             "type": "text",
                             "text": """
-                            You are DevClaw, an autonomous Apple platform coding agent. You have bash, \
+                            \(buildOverride)You are DevClaw, an autonomous Apple platform coding agent. You have bash, \
                             file read, and file write tools. Every task follows a spec-driven, \
                             feedback-validated loop using two CLIs:
 
@@ -396,6 +420,34 @@ struct AnthropicService {
                 }
             }
         }
+    }
+
+    func complete(prompt: String, apiKey: String, model: String) async throws -> String {
+        var request = URLRequest(url: Self.endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+
+        let body: [String: Any] = [
+            "model": model,
+            "max_tokens": 512,
+            "messages": [["role": "user", "content": prompt]]
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            throw StreamError.apiError(parseError(data) ?? "HTTP \(http.statusCode)")
+        }
+
+        struct Response: Decodable {
+            struct Block: Decodable { let type: String; let text: String? }
+            let content: [Block]
+        }
+        let decoded = try JSONDecoder().decode(Response.self, from: data)
+        return decoded.content.first(where: { $0.type == "text" })?.text ?? ""
     }
 
     private func parseError(_ data: Data) -> String? {
