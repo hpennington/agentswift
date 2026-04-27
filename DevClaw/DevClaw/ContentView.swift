@@ -13,12 +13,19 @@ final class ChatViewModel: ObservableObject {
     private let executor = ToolExecutor()
     private var conversationHistory: [[String: Any]] = []
     private var agentTask: Task<Void, Never>?
+    private var messageQueue: [String] = []
 
     func send(_ text: String, apiKey: String) {
-        guard !isRunning, !text.isEmpty, !apiKey.isEmpty else { return }
-        isRunning = true
+        guard !text.isEmpty, !apiKey.isEmpty else { return }
 
         items.append(ChatItem(kind: .user(text)))
+
+        if isRunning {
+            messageQueue.append(text)
+            return
+        }
+
+        isRunning = true
         conversationHistory.append(["role": "user", "content": text])
 
         agentTask = Task {
@@ -30,6 +37,7 @@ final class ChatViewModel: ObservableObject {
     func stop() {
         agentTask?.cancel()
         agentTask = nil
+        messageQueue.removeAll()
         isRunning = false
     }
 
@@ -114,7 +122,36 @@ final class ChatViewModel: ObservableObject {
                 conversationHistory.append(["role": "assistant", "content": assistantContent])
             }
 
-            guard stopReason == "tool_use" else { break }
+            if stopReason != "tool_use" {
+                guard !messageQueue.isEmpty, !Task.isCancelled else { break }
+                let next = messageQueue.removeFirst()
+                conversationHistory.append(["role": "user", "content": next])
+                continue
+            }
+
+            if let next = takeLatestQueuedMessage() {
+                let supersededMessage = "Skipped because a newer queued message superseded this tool call."
+                var skippedToolResults: [[String: Any]] = []
+
+                for (_, block) in finishedBlocks.sorted(by: { $0.key < $1.key }) {
+                    guard block.type == "tool_use", let toolId = block.toolId else { continue }
+                    skippedToolResults.append(toolResultMessage(
+                        toolUseId: toolId,
+                        content: supersededMessage,
+                        isError: false
+                    ))
+                }
+
+                for itemsIdx in toolItemIdxBySSE.values {
+                    items[itemsIdx].setToolResult(supersededMessage, isError: false)
+                }
+                changeCount += 1
+
+                var userContent = skippedToolResults
+                userContent.append(["type": "text", "text": next])
+                conversationHistory.append(["role": "user", "content": userContent])
+                continue
+            }
 
             // Execute each tool call and collect results
             var toolResults: [[String: Any]] = []
@@ -155,6 +192,12 @@ final class ChatViewModel: ObservableObject {
         case "write_file": return "→ \(obj["path"] as? String ?? "")"
         default:        return json
         }
+    }
+
+    private func takeLatestQueuedMessage() -> String? {
+        guard let latest = messageQueue.last else { return nil }
+        messageQueue.removeAll()
+        return latest
     }
 }
 
@@ -231,23 +274,29 @@ struct ContentView: View {
                 .onSubmit { sendMessage() }
 
             Button(action: {
-                if viewModel.isRunning { viewModel.stop() } else { sendMessage() }
+                if hasInputText {
+                    sendMessage()
+                } else {
+                    viewModel.stop()
+                }
             }) {
-                Image(systemName: viewModel.isRunning ? "stop.circle.fill" : "arrow.up.circle.fill")
+                Image(systemName: viewModel.isRunning && !hasInputText ? "stop.circle.fill" : "arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle((canSend || viewModel.isRunning) ? .primary : .secondary)
+                    .foregroundStyle(canSend ? .primary : .secondary)
             }
-            .disabled(!canSend && !viewModel.isRunning)
+            .disabled(!canSend)
             .keyboardShortcut(.return, modifiers: .command)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
 
+    private var hasInputText: Bool {
+        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var canSend: Bool {
-        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !viewModel.isRunning &&
-        !apiKey.isEmpty
+        !apiKey.isEmpty && (hasInputText || viewModel.isRunning)
     }
 
     private func sendMessage() {
