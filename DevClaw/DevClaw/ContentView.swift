@@ -410,7 +410,7 @@ struct ContentView: View {
             inputBar
         }
         .toolbar {
-            ToolbarItem(placement: .navigation) {
+            ToolbarItem(placement: .principal) {
                 Button(action: buildAndRun) {
                     Label("Build & Run", systemImage: "play.fill")
                 }
