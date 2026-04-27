@@ -102,7 +102,11 @@ struct AnthropicService {
         ]
     ]
 
-    func stream(messages: [[String: Any]], apiKey: String) -> AsyncThrowingStream<StreamChunk, Error> {
+    func stream(
+        messages: [[String: Any]],
+        apiKey: String,
+        simulatorContext: String?
+    ) -> AsyncThrowingStream<StreamChunk, Error> {
         AsyncThrowingStream { continuation in
             Task {
                 do {
@@ -111,6 +115,18 @@ struct AnthropicService {
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                     request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
                     request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+
+                    let simulatorInstruction: String
+                    if let simulatorContext, !simulatorContext.isEmpty {
+                        simulatorInstruction = """
+
+                        ACTIVE IOS SIMULATOR CONTEXT
+                        The user selected this simulator in the app UI: \(simulatorContext)
+                        Prefer this simulator whenever you need a simulator ID or iOS target context.
+                        """
+                    } else {
+                        simulatorInstruction = ""
+                    }
 
                     let body: [String: Any] = [
                         "model": "claude-sonnet-4-6",
@@ -301,6 +317,7 @@ struct AnthropicService {
                             - ALWAYS snapshot the UI before tapping to confirm element positions.
                             - ALWAYS use xcodebuildmcp — never raw xcodebuild, xcrun, or simctl.
                             - ALWAYS archive completed changes so specs stay up to date.
+                            \(simulatorInstruction)
                             """,
                             "cache_control": ["type": "ephemeral"]
                         ]],

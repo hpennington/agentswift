@@ -3,6 +3,135 @@ import SwiftUI
 
 // MARK: - View Model (agentic loop)
 
+struct SimulatorOption: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let runtime: String
+
+    var label: String {
+        "\(name) (\(runtime))"
+    }
+}
+
+@MainActor
+final class SimulatorStore: ObservableObject {
+    @Published private(set) var simulators: [SimulatorOption] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var loadError: String?
+
+    func refresh() {
+        guard !isLoading else { return }
+        isLoading = true
+        loadError = nil
+
+        Task {
+            do {
+                let simulators = try await fetchSimulators()
+                isLoading = false
+                self.simulators = simulators
+            } catch {
+                isLoading = false
+                self.simulators = []
+                self.loadError = error.localizedDescription
+            }
+        }
+    }
+
+    private func fetchSimulators() async throws -> [SimulatorOption] {
+        try await withCheckedThrowingContinuation { continuation in
+            let process = Process()
+            let outputPipe = Pipe()
+            let errorPipe = Pipe()
+
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+            process.arguments = ["simctl", "list", "devices", "available", "-j"]
+            process.standardOutput = outputPipe
+            process.standardError = errorPipe
+
+            process.terminationHandler = { process in
+                let output = String(
+                    data: outputPipe.fileHandleForReading.readDataToEndOfFile(),
+                    encoding: .utf8
+                ) ?? ""
+                let errorOutput = String(
+                    data: errorPipe.fileHandleForReading.readDataToEndOfFile(),
+                    encoding: .utf8
+                ) ?? ""
+
+                guard process.terminationStatus == 0 else {
+                    let message = errorOutput.isEmpty ? "Unable to load simulators." : errorOutput
+                    continuation.resume(throwing: SimulatorLoadError.message(
+                        message.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ))
+                    return
+                }
+
+                do {
+                    let devices = try Self.parseSimulators(from: output)
+                    continuation.resume(returning: devices)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+
+    nonisolated private static func parseSimulators(from json: String) throws -> [SimulatorOption] {
+        struct SimctlResponse: Decodable {
+            let devices: [String: [SimDevice]]
+        }
+
+        struct SimDevice: Decodable {
+            let name: String
+            let udid: String
+            let isAvailable: Bool?
+        }
+
+        let decoder = JSONDecoder()
+        let response = try decoder.decode(SimctlResponse.self, from: Data(json.utf8))
+
+        return response.devices
+            .flatMap { runtimeKey, devices -> [SimulatorOption] in
+                let runtime = runtimeName(from: runtimeKey)
+                return devices.compactMap { device -> SimulatorOption? in
+                    guard device.isAvailable != false else { return nil }
+                    return SimulatorOption(id: device.udid, name: device.name, runtime: runtime)
+                }
+            }
+            .sorted {
+                if $0.runtime == $1.runtime {
+                    return $0.name < $1.name
+                }
+                return $0.runtime > $1.runtime
+            }
+    }
+
+    nonisolated private static func runtimeName(from runtimeKey: String) -> String {
+        let rawName = runtimeKey.split(separator: ".").last.map(String.init) ?? runtimeKey
+        return rawName
+            .replacingOccurrences(of: "com.apple.CoreSimulator.SimRuntime.", with: "")
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "iOS ", with: "iOS ")
+    }
+
+    private enum SimulatorLoadError: LocalizedError {
+        case message(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .message(let message):
+                return message
+            }
+        }
+    }
+}
+
 @MainActor
 final class ChatViewModel: ObservableObject {
     @Published var items: [ChatItem] = []
@@ -13,24 +142,24 @@ final class ChatViewModel: ObservableObject {
     private let executor = ToolExecutor()
     private var conversationHistory: [[String: Any]] = []
     private var agentTask: Task<Void, Never>?
-    private var messageQueue: [String] = []
+    private var messageQueue: [QueuedMessage] = []
 
-    func send(_ text: String, apiKey: String) {
+    func send(_ text: String, apiKey: String, simulatorContext: String?) {
         guard !text.isEmpty, !apiKey.isEmpty else { return }
 
         items.append(ChatItem(kind: .user(text)))
 
         if isRunning {
-            messageQueue.append(text)
+            messageQueue.append(QueuedMessage(text: text, simulatorContext: simulatorContext))
             return
         }
 
         isRunning = true
-        conversationHistory.append(["role": "user", "content": text])
+        conversationHistory.append(["role": "user", "content": contextualizedMessage(text, simulatorContext: simulatorContext)])
 
         agentTask = Task {
             defer { isRunning = false }
-            await agenticLoop(apiKey: apiKey)
+            await agenticLoop(apiKey: apiKey, simulatorContext: simulatorContext)
         }
     }
 
@@ -48,7 +177,7 @@ final class ChatViewModel: ObservableObject {
 
     // MARK: - Agentic loop
 
-    private func agenticLoop(apiKey: String) async {
+    private func agenticLoop(apiKey: String, simulatorContext: String?) async {
         while true {
             var streamingTextIdx: Int?    // index into items[] of the current assistant text bubble
             var toolItemIdxBySSE: [Int: Int] = [:]   // SSE block index → items[] index
@@ -57,7 +186,11 @@ final class ChatViewModel: ObservableObject {
             var stopReason = "end_turn"
 
             do {
-                for try await chunk in service.stream(messages: conversationHistory, apiKey: apiKey) {
+                for try await chunk in service.stream(
+                    messages: conversationHistory,
+                    apiKey: apiKey,
+                    simulatorContext: simulatorContext
+                ) {
                     switch chunk {
 
                     case .textDelta(let delta):
@@ -125,7 +258,10 @@ final class ChatViewModel: ObservableObject {
             if stopReason != "tool_use" {
                 guard !messageQueue.isEmpty, !Task.isCancelled else { break }
                 let next = messageQueue.removeFirst()
-                conversationHistory.append(["role": "user", "content": next])
+                conversationHistory.append([
+                    "role": "user",
+                    "content": contextualizedMessage(next.text, simulatorContext: next.simulatorContext)
+                ])
                 continue
             }
 
@@ -148,7 +284,10 @@ final class ChatViewModel: ObservableObject {
                 changeCount += 1
 
                 var userContent = skippedToolResults
-                userContent.append(["type": "text", "text": next])
+                userContent.append([
+                    "type": "text",
+                    "text": contextualizedMessage(next.text, simulatorContext: next.simulatorContext)
+                ])
                 conversationHistory.append(["role": "user", "content": userContent])
                 continue
             }
@@ -181,6 +320,17 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    private func contextualizedMessage(_ text: String, simulatorContext: String?) -> String {
+        guard let simulatorContext, !simulatorContext.isEmpty else { return text }
+        return """
+        [Selected iOS Simulator]
+        \(simulatorContext)
+
+        [User Message]
+        \(text)
+        """
+    }
+
     // Pretty-print tool input for display
     private func displayInput(name: String, json: String) -> String {
         guard let data = json.data(using: .utf8),
@@ -194,10 +344,15 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func takeLatestQueuedMessage() -> String? {
+    private func takeLatestQueuedMessage() -> QueuedMessage? {
         guard let latest = messageQueue.last else { return nil }
         messageQueue.removeAll()
         return latest
+    }
+
+    private struct QueuedMessage {
+        let text: String
+        let simulatorContext: String?
     }
 }
 
@@ -205,7 +360,9 @@ final class ChatViewModel: ObservableObject {
 
 struct ContentView: View {
     @StateObject private var viewModel = ChatViewModel()
+    @StateObject private var simulatorStore = SimulatorStore()
     @AppStorage("anthropicAPIKey") private var apiKey = ""
+    @AppStorage("selectedSimulatorID") private var selectedSimulatorID = ""
     @State private var input = ""
     @State private var showSettingsPanel = false
 
@@ -228,7 +385,11 @@ struct ContentView: View {
             }
         }
         .inspector(isPresented: $showSettingsPanel) {
-            SettingsPanel(apiKey: $apiKey)
+            SettingsPanel(
+                apiKey: $apiKey,
+                simulatorStore: simulatorStore,
+                selectedSimulatorID: $selectedSimulatorID
+            )
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
         }
         .frame(minWidth: 720, minHeight: 520)
@@ -236,6 +397,9 @@ struct ContentView: View {
             if apiKey.isEmpty && viewModel.items.isEmpty {
                 SetupPrompt { showSettingsPanel = true }
             }
+        }
+        .task {
+            simulatorStore.refresh()
         }
     }
 
@@ -305,7 +469,14 @@ struct ContentView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         input = ""
-        viewModel.send(text, apiKey: apiKey)
+        viewModel.send(text, apiKey: apiKey, simulatorContext: selectedSimulatorContext)
+    }
+
+    private var selectedSimulatorContext: String? {
+        guard let simulator = simulatorStore.simulators.first(where: { $0.id == selectedSimulatorID }) else {
+            return nil
+        }
+        return "\(simulator.label) [\(simulator.id)]"
     }
 }
 
@@ -475,6 +646,8 @@ struct SetupPrompt: View {
 
 struct SettingsPanel: View {
     @Binding var apiKey: String
+    @ObservedObject var simulatorStore: SimulatorStore
+    @Binding var selectedSimulatorID: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -491,13 +664,64 @@ struct SettingsPanel: View {
                     .foregroundStyle(.secondary)
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("iOS Simulator")
+                        .font(.subheadline.weight(.medium))
+                    Spacer()
+                    Button {
+                        simulatorStore.refresh()
+                    } label: {
+                        if simulatorStore.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help("Refresh available simulators")
+                }
+
+                Picker("iOS Simulator", selection: $selectedSimulatorID) {
+                    Text("None").tag("")
+                    ForEach(simulatorStore.simulators) { simulator in
+                        Text(simulator.label).tag(simulator.id)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .disabled(simulatorStore.simulators.isEmpty)
+
+                if let simulator = simulatorStore.simulators.first(where: { $0.id == selectedSimulatorID }) {
+                    Text("Injected into chat context as \(simulator.label).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if let loadError = simulatorStore.loadError {
+                    Text(loadError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                } else {
+                    Text("Choose a simulator to give the agent a concrete iOS target.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Spacer(minLength: 0)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onChange(of: simulatorStore.simulators) { _, simulators in
+            if !selectedSimulatorID.isEmpty && !simulators.contains(where: { $0.id == selectedSimulatorID }) {
+                selectedSimulatorID = ""
+            }
+        }
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
 }
