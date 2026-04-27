@@ -424,6 +424,8 @@ struct ContentView: View {
         .overlay {
             if apiKey.isEmpty && viewModel.items.isEmpty {
                 SetupPrompt { showSettingsPanel = true }
+            } else if selectedProjectPath.isEmpty {
+                ProjectFolderPrompt(selectedProjectPath: $selectedProjectPath)
             }
         }
         .task {
@@ -676,6 +678,37 @@ struct SetupPrompt: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
+    }
+}
+
+struct ProjectFolderPrompt: View {
+    @Binding var selectedProjectPath: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "folder.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("Choose a project folder to start")
+                .foregroundStyle(.secondary)
+            Button("Choose Folder", action: chooseFolder)
+                .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+    }
+
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        panel.message = "Select the project folder to inject into chat context."
+        if panel.runModal() == .OK, let url = panel.url {
+            selectedProjectPath = url.path
+        }
     }
 }
 
