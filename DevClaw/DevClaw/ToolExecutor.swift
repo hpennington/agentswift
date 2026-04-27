@@ -42,14 +42,41 @@ struct ToolExecutor {
         }
     }
 
+    private static let richPATH: String = {
+        // Standard locations where Homebrew, npm globals, and developer tools live.
+        let standard = [
+            "/opt/homebrew/bin",
+            "/opt/homebrew/sbin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin",
+        ]
+        // Prepend whatever the app process already has so nothing is lost.
+        let existing = ProcessInfo.processInfo.environment["PATH"] ?? ""
+        let merged = (standard + existing.split(separator: ":").map(String.init))
+            .reduce(into: [String]()) { acc, p in
+                if !acc.contains(p) { acc.append(p) }
+            }
+        return merged.joined(separator: ":")
+    }()
+
     private func runBash(_ command: String) async -> (String, Bool) {
         await withCheckedContinuation { continuation in
             let proc = Process()
             let outPipe = Pipe()
             let errPipe = Pipe()
 
+            // Inherit the full app environment, then override PATH so that
+            // Homebrew, npm globals, and other developer tools are found without
+            // the agent needing to hard-code or discover paths itself.
+            var env = ProcessInfo.processInfo.environment
+            env["PATH"] = Self.richPATH
+
             proc.executableURL = URL(fileURLWithPath: "/bin/bash")
             proc.arguments = ["-c", command]
+            proc.environment = env
             proc.standardOutput = outPipe
             proc.standardError = errPipe
             proc.currentDirectoryURL = URL(

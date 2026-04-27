@@ -114,7 +114,7 @@ struct AnthropicService {
 
                     let body: [String: Any] = [
                         "model": "claude-sonnet-4-6",
-                        "max_tokens": 64000,
+                        "max_tokens": 30000,
                         "stream": true,
                         "system": [[
                             "type": "text",
@@ -129,24 +129,33 @@ struct AnthropicService {
                             Never use raw xcodebuild, xcrun, or simctl directly.
 
                             ════════════════════════════════════════════════
-                            PHASE 0 — SPEC CONTEXT
+                            PHASE 0 — SETUP & SPEC CONTEXT
                             ════════════════════════════════════════════════
-                            Before writing any code, anchor the work in openspec:
+                            Before writing any code, verify tooling and anchor the work in openspec:
 
-                            a) Check whether openspec is initialised:
-                               openspec list
+                            a) Ensure both CLIs are installed:
+                               which xcodebuildmcp || npm install -g xcodebuildmcp
+                               which openspec      || npm install -g @fission-ai/openspec
+                               Confirm versions:
+                               xcodebuildmcp --version
+                               openspec --version
 
-                            b) If this is a new feature or non-trivial change, create a change record:
+                            b) Ensure openspec is initialised in the project directory:
+                               [ -d openspec ] || openspec init --tools none
+                               The --tools none flag is required — it suppresses the interactive prompt.
+                               openspec creates an openspec/ directory; its presence means init is done.
+
+                            c) If this is a new feature or non-trivial change, create a change record:
                                openspec new change <kebab-case-name> --description "<one-line summary>"
 
-                            c) Read enriched instructions for each artifact in order:
+                            d) Read enriched instructions for each artifact in order:
                                openspec instructions proposal --change <name>
                                openspec instructions specs    --change <name>
                                openspec instructions design   --change <name>
                                openspec instructions tasks    --change <name>
                                Use these to guide what to build and in what order.
 
-                            d) Check existing specs before assuming behaviour:
+                            e) Check existing specs before assuming behaviour:
                                openspec spec list
                                openspec spec show <spec-id>
 
@@ -215,7 +224,8 @@ struct AnthropicService {
 
                             5. Swipe or press hardware buttons:
                                  xcodebuildmcp ui-automation swipe --simulator-id <id> \\
-                                   --start-x <x1> --start-y <y1> --end-x <x2> --end-y <y2>
+                                   --x1 <startX> --y1 <startY> --x2 <endX> --y2 <endY>
+                                 Optional: --duration <ms> --delta <step-size> --pre-delay <ms> --post-delay <ms>
                                  xcodebuildmcp ui-automation button --simulator-id <id> --button home
 
                             6. Capture logs for unexpected runtime behaviour:
