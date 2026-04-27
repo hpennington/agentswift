@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import SwiftUI
 
@@ -10,6 +11,32 @@ struct SimulatorOption: Identifiable, Hashable {
 
     var label: String {
         "\(name) (\(runtime))"
+    }
+}
+
+struct ChatContext: Equatable {
+    let simulator: String?
+    let projectPath: String?
+
+    var messagePrefix: String? {
+        var sections: [String] = []
+
+        if let simulator, !simulator.isEmpty {
+            sections.append("""
+            [Selected iOS Simulator]
+            \(simulator)
+            """)
+        }
+
+        if let projectPath, !projectPath.isEmpty {
+            sections.append("""
+            [Selected Project Path]
+            \(projectPath)
+            """)
+        }
+
+        guard !sections.isEmpty else { return nil }
+        return sections.joined(separator: "\n\n")
     }
 }
 
@@ -144,22 +171,22 @@ final class ChatViewModel: ObservableObject {
     private var agentTask: Task<Void, Never>?
     private var messageQueue: [QueuedMessage] = []
 
-    func send(_ text: String, apiKey: String, simulatorContext: String?) {
+    func send(_ text: String, apiKey: String, context: ChatContext) {
         guard !text.isEmpty, !apiKey.isEmpty else { return }
 
         items.append(ChatItem(kind: .user(text)))
 
         if isRunning {
-            messageQueue.append(QueuedMessage(text: text, simulatorContext: simulatorContext))
+            messageQueue.append(QueuedMessage(text: text, context: context))
             return
         }
 
         isRunning = true
-        conversationHistory.append(["role": "user", "content": contextualizedMessage(text, simulatorContext: simulatorContext)])
+        conversationHistory.append(["role": "user", "content": contextualizedMessage(text, context: context)])
 
         agentTask = Task {
             defer { isRunning = false }
-            await agenticLoop(apiKey: apiKey, simulatorContext: simulatorContext)
+            await agenticLoop(apiKey: apiKey, context: context)
         }
     }
 
@@ -177,7 +204,7 @@ final class ChatViewModel: ObservableObject {
 
     // MARK: - Agentic loop
 
-    private func agenticLoop(apiKey: String, simulatorContext: String?) async {
+    private func agenticLoop(apiKey: String, context: ChatContext) async {
         while true {
             var streamingTextIdx: Int?    // index into items[] of the current assistant text bubble
             var toolItemIdxBySSE: [Int: Int] = [:]   // SSE block index → items[] index
@@ -189,7 +216,7 @@ final class ChatViewModel: ObservableObject {
                 for try await chunk in service.stream(
                     messages: conversationHistory,
                     apiKey: apiKey,
-                    simulatorContext: simulatorContext
+                    context: context
                 ) {
                     switch chunk {
 
@@ -260,7 +287,7 @@ final class ChatViewModel: ObservableObject {
                 let next = messageQueue.removeFirst()
                 conversationHistory.append([
                     "role": "user",
-                    "content": contextualizedMessage(next.text, simulatorContext: next.simulatorContext)
+                    "content": contextualizedMessage(next.text, context: next.context)
                 ])
                 continue
             }
@@ -286,7 +313,7 @@ final class ChatViewModel: ObservableObject {
                 var userContent = skippedToolResults
                 userContent.append([
                     "type": "text",
-                    "text": contextualizedMessage(next.text, simulatorContext: next.simulatorContext)
+                    "text": contextualizedMessage(next.text, context: next.context)
                 ])
                 conversationHistory.append(["role": "user", "content": userContent])
                 continue
@@ -320,11 +347,10 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func contextualizedMessage(_ text: String, simulatorContext: String?) -> String {
-        guard let simulatorContext, !simulatorContext.isEmpty else { return text }
+    private func contextualizedMessage(_ text: String, context: ChatContext) -> String {
+        guard let prefix = context.messagePrefix else { return text }
         return """
-        [Selected iOS Simulator]
-        \(simulatorContext)
+        \(prefix)
 
         [User Message]
         \(text)
@@ -352,7 +378,7 @@ final class ChatViewModel: ObservableObject {
 
     private struct QueuedMessage {
         let text: String
-        let simulatorContext: String?
+        let context: ChatContext
     }
 }
 
@@ -363,6 +389,7 @@ struct ContentView: View {
     @StateObject private var simulatorStore = SimulatorStore()
     @AppStorage("anthropicAPIKey") private var apiKey = ""
     @AppStorage("selectedSimulatorID") private var selectedSimulatorID = ""
+    @AppStorage("selectedProjectPath") private var selectedProjectPath = ""
     @State private var input = ""
     @State private var showSettingsPanel = false
 
@@ -388,7 +415,8 @@ struct ContentView: View {
             SettingsPanel(
                 apiKey: $apiKey,
                 simulatorStore: simulatorStore,
-                selectedSimulatorID: $selectedSimulatorID
+                selectedSimulatorID: $selectedSimulatorID,
+                selectedProjectPath: $selectedProjectPath
             )
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
         }
@@ -469,7 +497,7 @@ struct ContentView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         input = ""
-        viewModel.send(text, apiKey: apiKey, simulatorContext: selectedSimulatorContext)
+        viewModel.send(text, apiKey: apiKey, context: chatContext)
     }
 
     private var selectedSimulatorContext: String? {
@@ -477,6 +505,13 @@ struct ContentView: View {
             return nil
         }
         return "\(simulator.label) [\(simulator.id)]"
+    }
+
+    private var chatContext: ChatContext {
+        ChatContext(
+            simulator: selectedSimulatorContext,
+            projectPath: selectedProjectPath.isEmpty ? nil : selectedProjectPath
+        )
     }
 }
 
@@ -648,6 +683,7 @@ struct SettingsPanel: View {
     @Binding var apiKey: String
     @ObservedObject var simulatorStore: SimulatorStore
     @Binding var selectedSimulatorID: String
+    @Binding var selectedProjectPath: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -708,6 +744,38 @@ struct SettingsPanel: View {
                 }
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Project Folder")
+                    .font(.subheadline.weight(.medium))
+
+                HStack(spacing: 8) {
+                    Button("Choose Folder") {
+                        chooseProjectFolder()
+                    }
+                    .buttonStyle(.bordered)
+
+                    if !selectedProjectPath.isEmpty {
+                        Button("Clear") {
+                            selectedProjectPath = ""
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+
+                if selectedProjectPath.isEmpty {
+                    Text("Choose the project root to inject it into chat context.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(selectedProjectPath)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                    Text("Injected into chat context as the active project path.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Spacer(minLength: 0)
         }
         .padding(24)
@@ -716,6 +784,24 @@ struct SettingsPanel: View {
             if !selectedSimulatorID.isEmpty && !simulators.contains(where: { $0.id == selectedSimulatorID }) {
                 selectedSimulatorID = ""
             }
+        }
+    }
+
+    private func chooseProjectFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        panel.message = "Select the project folder to inject into chat context."
+
+        if !selectedProjectPath.isEmpty {
+            panel.directoryURL = URL(fileURLWithPath: selectedProjectPath)
+        }
+
+        if panel.runModal() == .OK, let url = panel.url {
+            selectedProjectPath = url.path
         }
     }
 }

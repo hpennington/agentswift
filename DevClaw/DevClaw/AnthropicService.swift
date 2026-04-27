@@ -105,7 +105,7 @@ struct AnthropicService {
     func stream(
         messages: [[String: Any]],
         apiKey: String,
-        simulatorContext: String?
+        context: ChatContext
     ) -> AsyncThrowingStream<StreamChunk, Error> {
         AsyncThrowingStream { continuation in
             Task {
@@ -116,16 +116,17 @@ struct AnthropicService {
                     request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
                     request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
 
-                    let simulatorInstruction: String
-                    if let simulatorContext, !simulatorContext.isEmpty {
-                        simulatorInstruction = """
+                    let contextInstruction: String
+                    if let prefix = context.messagePrefix {
+                        contextInstruction = """
 
-                        ACTIVE IOS SIMULATOR CONTEXT
-                        The user selected this simulator in the app UI: \(simulatorContext)
-                        Prefer this simulator whenever you need a simulator ID or iOS target context.
+                        ACTIVE USER CONTEXT
+                        The user selected this context in the app UI:
+                        \(prefix)
+                        Treat it as the current working target for project discovery and simulator selection.
                         """
                     } else {
-                        simulatorInstruction = ""
+                        contextInstruction = ""
                     }
 
                     let body: [String: Any] = [
@@ -317,7 +318,7 @@ struct AnthropicService {
                             - ALWAYS snapshot the UI before tapping to confirm element positions.
                             - ALWAYS use xcodebuildmcp — never raw xcodebuild, xcrun, or simctl.
                             - ALWAYS archive completed changes so specs stay up to date.
-                            \(simulatorInstruction)
+                            \(contextInstruction)
                             """,
                             "cache_control": ["type": "ephemeral"]
                         ]],
