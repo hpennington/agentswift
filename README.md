@@ -1,6 +1,14 @@
 # AgentSwift
 
 [Download AgentSwift-0.1.zip](https://github.com/hpennington/agentswift/raw/refs/heads/main/AgentSwift-0.1.zip)
+You must install the dependencies listed below in order for the binary to work. See below for setup commands.
+
+Dependencies:
+- Xcode
+- Xcode command line tools
+- xcodebuildmcp
+- openspec
+  
 
 ![AgentSwift settings panel](screenshot2.png)
 
