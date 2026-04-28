@@ -5,6 +5,6 @@
 	<key>SUPublicEDKey</key>
 	<string>otkUM2qmkM7+Ls/RtdqdwBjRaHiu3ObEXcY3FaOcVK0=</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/hpennington/agentswift/blob/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/hpennington/agentswift/refs/heads/main/appcast.xml</string>
 </dict>
 </plist>

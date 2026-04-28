@@ -1,6 +1,6 @@
 # AgentSwift
 
-[Download AgentSwift](https://github.com/hpennington/agentswift/raw/refs/heads/main/AgentSwift-0.2.2.zip)
+[Download AgentSwift](https://github.com/hpennington/agentswift/raw/refs/heads/main/AgentSwift-0.2.3.zip)
 You must install the dependencies listed below in order for the binary to work. See below for setup commands.
 
 Dependencies:
