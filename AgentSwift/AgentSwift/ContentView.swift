@@ -443,11 +443,13 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Button(action: buildAndRun) {
-                    Label("Build & Run", systemImage: "play.fill")
+                if !selectedProjectPath.isEmpty {
+                    Button(action: buildAndRun) {
+                        Label("Build & Run", systemImage: "play.fill")
+                    }
+                    .help("Build and run the project")
+                    .disabled(!canBuildAndRun)
                 }
-                .help("Build and run the project")
-                .disabled(!canBuildAndRun)
             }
             ToolbarItem(placement: .automatic) {
                 Button { showSettingsPanel.toggle() } label: {
