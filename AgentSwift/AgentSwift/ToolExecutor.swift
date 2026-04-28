@@ -37,6 +37,29 @@ struct ToolExecutor {
                 return (error.localizedDescription, true)
             }
 
+        case "open_spec_docs":
+            guard let changeName = input["change_name"] as? String,
+                  let proposalPath = input["proposal_path"] as? String,
+                  let designPath = input["design_path"] as? String else {
+                return ("Missing 'change_name', 'proposal_path', or 'design_path' parameter", true)
+            }
+            let proposal = (try? String(contentsOfFile: proposalPath, encoding: .utf8)) ?? ""
+            let design = (try? String(contentsOfFile: designPath, encoding: .utf8)) ?? ""
+            guard !proposal.isEmpty || !design.isEmpty else {
+                return ("Could not read proposal.md or design.md at the provided paths.", true)
+            }
+            let content = SpecDocsContent(
+                changeName: changeName,
+                proposalMarkdown: proposal,
+                designMarkdown: design
+            )
+            let accepted = await SpecDocsWindowManager.shared.open(content)
+            if accepted {
+                return ("Spec accepted by the user. Proceed with implementation.", false)
+            } else {
+                return ("Spec rejected by the user. Stop implementation and ask the user what changes they want to the proposal or design before continuing.", true)
+            }
+
         default:
             return ("Unknown tool: \(name)", true)
         }

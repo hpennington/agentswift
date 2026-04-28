@@ -401,10 +401,11 @@ final class ChatViewModel: ObservableObject {
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else { return json }
         switch name {
-        case "bash":    return "$ \(obj["command"] as? String ?? "")"
-        case "read_file":  return "cat \(obj["path"] as? String ?? "")"
-        case "write_file": return "→ \(obj["path"] as? String ?? "")"
-        default:        return json
+        case "bash":           return "$ \(obj["command"] as? String ?? "")"
+        case "read_file":      return "cat \(obj["path"] as? String ?? "")"
+        case "write_file":     return "→ \(obj["path"] as? String ?? "")"
+        case "open_spec_docs": return obj["change_name"] as? String ?? ""
+        default:               return json
         }
     }
 
@@ -811,10 +812,11 @@ struct ToolCard: View {
 
     private var toolIcon: String {
         switch name {
-        case "bash": return "terminal"
-        case "read_file": return "doc.text"
-        case "write_file": return "square.and.pencil"
-        default: return "wrench"
+        case "bash":           return "terminal"
+        case "read_file":      return "doc.text"
+        case "write_file":     return "square.and.pencil"
+        case "open_spec_docs": return "doc.richtext"
+        default:               return "wrench"
         }
     }
 }

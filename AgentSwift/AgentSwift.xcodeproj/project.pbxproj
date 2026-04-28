@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F8550A0F2FA1215A00CE0B4D /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = F8550A0E2FA1215A00CE0B4D /* Textual */; };
 		F8C840952FA0352D00AFD9D2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = F8C840942FA0352D00AFD9D2 /* Sparkle */; };
 /* End PBXBuildFile section */
 
@@ -69,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F8550A0F2FA1215A00CE0B4D /* Textual in Frameworks */,
 				F8C840952FA0352D00AFD9D2 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -131,6 +133,7 @@
 			name = AgentSwift;
 			packageProductDependencies = (
 				F8C840942FA0352D00AFD9D2 /* Sparkle */,
+				F8550A0E2FA1215A00CE0B4D /* Textual */,
 			);
 			productName = DevClaw;
 			productReference = F87AA49C2F9EEE6D00FDAFCB /* AgentSwift.app */;
@@ -216,6 +219,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F8C840932FA0352D00AFD9D2 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				F8550A0D2FA1215A00CE0B4D /* XCRemoteSwiftPackageReference "textual" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F87AA49D2F9EEE6D00FDAFCB /* Products */;
@@ -420,7 +424,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 3EZ5UQTGVP;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -433,8 +437,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 0.1;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vectorstudio.AgentSwift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -457,7 +461,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 3EZ5UQTGVP;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -470,8 +474,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 0.1;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vectorstudio.AgentSwift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -607,6 +611,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		F8550A0D2FA1215A00CE0B4D /* XCRemoteSwiftPackageReference "textual" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/textual.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.1;
+			};
+		};
 		F8C840932FA0352D00AFD9D2 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
@@ -618,6 +630,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		F8550A0E2FA1215A00CE0B4D /* Textual */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F8550A0D2FA1215A00CE0B4D /* XCRemoteSwiftPackageReference "textual" */;
+			productName = Textual;
+		};
 		F8C840942FA0352D00AFD9D2 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F8C840932FA0352D00AFD9D2 /* XCRemoteSwiftPackageReference "Sparkle" */;
