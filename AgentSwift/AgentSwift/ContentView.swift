@@ -475,7 +475,7 @@ struct ContentView: View {
         .frame(minWidth: 720, minHeight: 520)
         .overlay {
             if apiKey.isEmpty && viewModel.items.isEmpty {
-                SetupPrompt { showSettingsPanel = true }
+                SetupPrompt(apiKey: $apiKey)
             } else if selectedProjectPath.isEmpty {
                 ProjectFolderPrompt(selectedProjectPath: $selectedProjectPath)
             }
@@ -822,16 +822,18 @@ struct ToolCard: View {
 // MARK: - Supporting views
 
 struct SetupPrompt: View {
-    let action: () -> Void
+    @Binding var apiKey: String
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "key.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
             Text("Add your Anthropic API key to start")
-                .foregroundStyle(.secondary)
-            Button("Open Settings", action: action)
-                .buttonStyle(.borderedProminent)
+                .font(.title3.weight(.medium))
+            SecureField("sk-ant-api03-…", text: $apiKey)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 320)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
