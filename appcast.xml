@@ -3,12 +3,12 @@
     <channel>
         <title>AgentSwift</title>
         <item>
-            <title>0.2.3</title>
-            <pubDate>Tue, 28 Apr 2026 15:24:55 -0500</pubDate>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+            <title>0.2.4</title>
+            <pubDate>Wed, 29 Apr 2026 14:55:40 -0500</pubDate>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://raw.githubusercontent.com/hpennington/agentswift/refs/heads/main/AgentSwift-0.2.3.zip" length="9191254" type="application/octet-stream" sparkle:edSignature="YBd0rNL3GL4meupiOm9h1f0LdaZBROyDybnPte0X9HxQTYjflWR8yCDy6rFmV3Rc7Kng+VySsbmFlMpH8TNuAg=="/>
+            <enclosure url="https://raw.githubusercontent.com/hpennington/agentswift/refs/heads/main/AgentSwift-0.2.4.zip" length="9194774" type="application/octet-stream" sparkle:edSignature="2YXkjz59t9xV/pEPxwHp5bQDNJJOe6xB7Mg03fDM2ztvCyagJ/MeQCYoWKE0KytvDvCFvkrpVExWSEwIB3zeDg=="/>
         </item>
     </channel>
 </rss>
