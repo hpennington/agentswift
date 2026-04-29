@@ -529,7 +529,14 @@ struct ContentView: View {
                 .padding(.vertical, 8)
                 .background(.background.secondary)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .onSubmit { sendMessage() }
+                .onKeyPress(.return, phases: .down) { keyPress in
+                    if keyPress.modifiers.contains(.shift) {
+                        input += "\n"
+                        return .handled
+                    }
+                    sendMessage()
+                    return .handled
+                }
 
             Button(action: {
                 if hasInputText {
@@ -543,7 +550,6 @@ struct ContentView: View {
                     .foregroundStyle(canSend ? .primary : .secondary)
             }
             .disabled(!canSend)
-            .keyboardShortcut(.return, modifiers: .command)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
